@@ -1,0 +1,52 @@
+name: Build FaceFind APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/build-apk.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Create Android project scaffold
+        run: |
+          flutter create --platforms=android --org com.facefind.app /tmp/facefind_android
+          cp mobile/pubspec.yaml /tmp/facefind_android/pubspec.yaml
+          rm -rf /tmp/facefind_android/lib
+          cp -r mobile/lib /tmp/facefind_android/lib
+
+      - name: Get packages
+        working-directory: /tmp/facefind_android
+        run: flutter pub get
+
+      - name: Build release APK
+        working-directory: /tmp/facefind_android
+        run: flutter build apk --release
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FaceFind-Android-APK
+          path: /tmp/facefind_android/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: /tmp/facefind_android/build/app/outputs/flutter-apk/app-release.apk
