@@ -46,7 +46,12 @@ jobs:
           if-no-files-found: error
 
       - name: Publish GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
+        if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: facefind-latest
+          name: FaceFind Android APK
+          body: Download FaceFind.apk and install it on Android.
+          overwrite_files: true
+          make_latest: true
           files: /tmp/facefind_android/build/app/outputs/flutter-apk/app-release.apk
